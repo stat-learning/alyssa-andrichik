@@ -1,0 +1,37 @@
+---
+title: "Problem Set 1"
+author: "Alyssa Andrichik"
+output: github_document
+---
+
+* * *
+
+### Chapter 2 exercises
+1. (a) For this Scenario it would be better for the learning method to be flexible. With such a big sample size and a smaller amount of parameters, there is less of a fear of over-fitting a model since the outliers will be more accounted for. Because the small number of predictors will mean we rely heavily on those parameters. 
+(b) For this Scenario it would be better for the learning method to be inflexible. With such a small sample size it necessary that there is a large amount of parameters to fit the model well and a flexible model might take into account factors that over-fit the model since there is a not a large enough sample size to be sure that the parameters are relevant. 
+(c) For this Scenario it would be better for the learning method to be flexible since the outcome is non-linear and the flexible learning methods are more specific and will capture systematic variability better to represent the non-linear relationship. 
+(d) For this Scenario it would be better for the learning method to be inflexible because the flexible method can capture variables that do not help find the accurate outcome and thus will over-fit the data to be incorrect. We don't want it to be too sensitive to the noise.
+
+2. (a) This is a regression problem because it is focusing solely on numbers. The scenario is most interested in inference because we want to look at the data that exists and not trying to create a prediction. n = 500 p = 4
+(b) This is a classification problem because we are looking at 2 category outcomes and not numbers. The scenario is most interested in predicting if a new project will be a success or a failure based on the already formulated model.  n = 20 p = 14
+(c) This i a regression problem because we are focusing on numbers not categories. The scenario is most interested in predicting the % change in US dollar. n = 52 p = 4
+
+4. (a)  1- Determining if a student passed or failed a class. The predictors would be the scores on different assignments, and the weight of each assignment in relation to the over grade for a class. The response is whether a student passed or failed a class based on how well they did on all their assignments and how those assignments correlate to the weight of the score. The goal would be to predict whether a student passed or failed a class.
+        2- Determining if a student will get into Reed (yes, no, wait-listed). The predictors would be SAT score, ACT score, essays, GPA, interest in Reed, involvement in extra curricular, and alumni relation. The response would be if a prospie is admitted, wait-listed, or denied. The goal would be to predict whether a student was admitted, wait-listed, or denied.
+        3- Determining whether a dog should be washed or not. The predictors would be time since last bath, smelliness factor, dirtiness factor, and the weather. The response would be if an owner will wash their dog or not. The goal would be to predict if a dog will be washed or not.
+
+(b)     1- Determining the factors that go into the salary of a Reed professor. The predictors would be number of students, tenured or not, gender, time at Reed, type of degree, number of degrees, national recognition, research difficulty, field of study, and other roles on campus. The response is what factors affect the salary of a professor. The goal would be to infer since we are understanding what factors go into deciding the salary of a professor and not to predict the salary.
+        2- Determining how much money should one allocate for groceries a week. The predictors would be how many people are you buying for, how expensive is the grocery store you use, number of meals you need, dietary restrictions, and is there a special occasion. The response will be the amount of money you should allocate for groceries a given week. The goal would be to predict the amount of money you should allot from your budget for groceries.
+        3- Determining the amount of money a movie will make the first weekend in the box office.  The predictors would be if there are A-list actors, how well the producing company has done in the past, based off a famous book, money already spent for movie, genre of movie, number of fan pages on social media, and other movies premiering that same weekend. The response  will be the amount of money the move will make opening weekend. The goal would be to predict the amount of money a movie will make.
+
+(c)     1- Education/school classes. Organize students based on their level of intelligence, success in certain subjects, ability to concentrate, and skill set.
+        2- Animal kingdoms. Organize species based on bone structure, physical attributes, etc. to organize their taxonomy.
+        3- Hospitals. Organize floors by different area of doctor expertise, health, type of disease.
+
+5. Flexible models can fit many different possible functional forms but needs a greater number of parameters so it is best for it to be under-fitted rather than over-fitted. A less flexible approach is best will less observations because it gives the model less certainty since there is not a lot to go on do to higher variance being more difficult to interpret. 
+
+6. Non-parametric methods do not make explicit assumptions about the functional form of f, but rather seeks an estimate of f that gets as close to the data points as possible. Non-parametric methods are better are accurately fitting to a wider range of possible shapes for f. But, non-parametric approaches do need a large number of observations. Parametric methods reduce the problem of estimating f down to one of estimating a set of parameters. Assuming a parametric form for f simplifies the problem of estimating f because it is generally much easier to estimate. 
+
+### Additional exercises
+1. (a) n=10 
+  (b) sorry i do not know what the questions are asking.
