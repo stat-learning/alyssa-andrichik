@@ -1,30 +1,80 @@
 ---
 title: "Lab 1"
-author: "ahhhh me"
-date: "9/11/2019"
+author: "Alyssa Andrichik"
+date: "9/11/2019
 output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(MASS)
+library(tidyverse)
+Boston
+?Boston
 ```
 
-## R Markdown
+#1)How many rows are in this data set? How many columns? What do the rows and columns represent?
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+The Boston data frame has 506 rows and 14 columns. The rows represent each suburb of Boston and the values/observations of the variables. The columns represent different predictors/variables that aim to help figure out the average value of the houses in a specific Boston suburb. This data set is focused on creating an inference model, since the median value of a house in the specific suburb is a variable. 
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+#2)Make some (2-3) pairwise scatterplots of the predictors (columns) in this data set. Describe your findings.
+```{r}
+ggplot(data = Boston, mapping = aes(x = dis,
+y = lstat)) +
+geom_point(alpha = 0.5) +
+  labs(x = "Weighted Mean of Distances to 5 Boston Employment Centers", y = "Percent of Population that has a Lower Status")
 ```
+There is a negative exponential correlation between the weighted mean of distances from a suburb to 5 Boston employment centers and the percent of population that has a lower status in a suburb. This means that, typically, the shorter the distance a suburb is from the weighted mean of distances to 5 Boston employment centers, a larger percent of the population of the suburb is considered to be of a lower status. 
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+ggplot(data = Boston, mapping = aes(x = age,
+y = dis)) +
+geom_point(alpha = 0.4) +
+  labs(x = "Proportion of Owner-Occupied Units Built Prior to 1940", y = "Weighted Mean of Distances to 5 Boston Employment Centers")
 ```
+There is a negative linear correlation between the proportion of owner-occupied units built prior to 1940 and the weighted mean of distances from a suburb to 5 Boston employment centers. This means that, typically, the suburbs with a larger proportion of the occupied units built prior to 1940 will be closer to the Boston employment centers. There is a smaller amount of suburbs with a greater amount of units built after 1940 in the data, but there is a distinct trend showing that newer units were built farther away from the employment centers.
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+ggplot(data = Boston, mapping = aes(x = rm,
+y = medv)) +
+geom_point(alpha = 0.3) +
+  labs(x = "Avg. Number of Rooms Per Dwelling", y = "Median Value of Owner-Occupied Homes in $1000s")
+```
+There is seemingly positive linear correlation between the average number of rooms per dwelling in a suburb and the median value of owner-occupied homes in a suburb. Most suburbs' average number of rooms is around 6, so there are less observations of suburbs that typically have more or less than 6 rooms on average. There is a distinct positive correlation based on the observations, but more observations of suburbs that have an average number of rooms as more and less than 6 would be preferable to ensure that the positive correlation is accurate. The scatter-plot shows that the more rooms on average leads to a higher median value. This makes sense because the more rooms in a house typically means a house is bigger, which typically means that a house is more expensive.  
+
+#3)Are any of the predictors associated with per capita crime rate? If so, explain the relationship.
+```{r}
+cor(Boston)
+```
+Per capita crime rate (crim) has a high positive correlation with the index of accessibility to radial highways (rad). The correlation coefficient is 0.626. This means that there is a high crime rate in suburbs that have easy access to a highway leading to or from an urban center. Per capita crime rate (crim) also has a high positive correlation with the percent of lower status people (lstat) in a suburb. The correlation coefficient is 0.456. This means there is a higher crime rate in suburbs with a larger percent of lower status residents. Per capita crime rate (crim) has a high positive correlation with the full-value property-tax rate (tax) of a suburb. The correlation coefficient is 0.583. This means that there is a higher crime rate in suburbs with higher property-tax rates.
+
+#4)Are there any suburbs of Boston that appear to have particularly high crime rates? Tax rate? Pupil-teacher ratios? Comment on the range of each predictor.
+
+```{r}
+view(Boston)
+```
+The highest crime rates are in suburbs 381 (88.97620), 419 (73.53410), and 406 (67.92080). The range is 0.00632 to 88.97620.
+
+The highest tax rates are in suburbs 489, 490, 491, 492, and 493 who's full-value property-tax rate per $10,000 is 711. The range is 187 to 711.
+
+The highest pupil-teacher ratios are in suburbs 355 and 366 both at a ratio of 22 to 1. The range of this ratio is 12.6:1 to 22:1.
+
+
+5)How many of the suburbs in this data set bound the Charles river?
+
+```{r}
+library(broom)
+Boston_table <- tidy(table(chas))
+```
+35 suburbs are bound to the Charles river, 471 are otherwise not.
+
+#6)What is the median pupil-teacher ratio among the towns in this data set?
+
+```{r}
+median(ptratio)
+```
+The median pupil-teacher ratio among the towns is 19.05 pupils to 1 teacher.
+
+#7)If you want to build a model to predict the average value of a home based on the other variables, what is your output/response? What is your input?
+
+The model's input would take into account the correlation between the median value of owner-occupied homes (medv) and the values/observations of the other variables. We want a flexible model that takes into account many parameters and a large sample size, so we would interpret the entire data set to understand trends between the medv variable and the others. The model would have to account for the correlation of each predictor to predict the output/response (the avg housing value). Based on how the predictors realte to medv, the model would interpret how each variable is applicable to medv. Then, based on how it is interpreted, my new model would apply the correlations to predict the average value of a home. 
