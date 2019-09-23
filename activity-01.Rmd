@@ -1,0 +1,12 @@
+---
+title: "Activity 1"
+author: "Alyssa Andrichik"
+date: "9/23/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
