@@ -1,0 +1,46 @@
+---
+title: "Activity 1"
+author: "Alyssa Andrichik"
+date: "9/23/2019"
+output: pdf_document
+---
+
+```{r}
+URL <- "http://andrewpbray.github.io/data/LA.csv"
+LA <- read.csv(URL)
+LA <- mutate(LA, logprice = log(price), log(sqft))
+m1 <- lm(log(price) ~ log(sqft) + bed +city, data = LA)
+summary(m1)
+```
+#1. What is the geometry of this model?
+
+The geometry is 4 non-intersecting planes
+
+#2. What appears to be the reference level for this city?
+
+Beverly Hills because it is the one city not mentioned. The intercept is based off of Beverly Hills. All other cities are based off of Beverly Hills
+
+#3. In the context of this problem, what is suggested by the sign of the coefficent for bed? Does this make sense to you?
+
+Holding all the other variable constant. As the number of beds increases the price decreases. Maybe big spaces is preferred more than more rooms. It is the same square footage (the comparison of two house with identical square footage in the same town), so it is the division of the space that determines the price. 
+
+#4. Does the relationship between logsqft and logprice change depending on the city?
+
+```{r}
+logsqft <- log(LA$sqft)
+m2 <- lm(logprice ~ logsqft + bed + city + logsqft:city,
+         data = LA)
+summary(m2)
+```
+
+The geometry is 4 planes with different slopes.
+
+#4. Does the relationship between logsqft and logprice change depending on the number of bed?
+
+```{r}
+m3 <- lm(logprice ~ logsqft + bed + logsqft:bed,
+         data = LA)
+summary(m3)
+```
+
+No longer a linear model. 
