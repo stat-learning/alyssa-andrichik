@@ -2,20 +2,20 @@
 title: "Lab 3: Regression Competition"
 subtitle: "In the hot New Jersey night"
 author: "Alyssa Andrichik"
-partner: "Emmett Powers""
-life saver: "Simon Couch""
 output: 
   pdf_document: default
 ---
 
 * * *
+partner: "Emmett Powers""
+life saver: "Simon Couch"
 ##Lab 3: Regression Competition
 ###In the hot New Jersey night
 Your objective is to build a multiple regression model that predicts the amount of violent crime in a community as a function of other characteristics of those communities. You will construct your model using a training data set with information on over 100 variables recorded for 1000 communities. I’ve held back the data on 200 communities; this will server as the test data set for assessing the predictive accuracy of your model. Your model will be due by noon on Friday.
 
 The main components of this lab are two R functions, described below, but consider and record the following as you go through the model building process.
 
-```{r}
+```{r message=FALSE}
 d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
 library(MASS)
 library(tidyverse)
@@ -32,13 +32,16 @@ d[d==""]<-NA
 ```
 ```{r}
 goodershit <- d %>%
-  select(-c(state, county, community, communityname, population, LemasSwornFT, LemasSwFTPerPop, LemasSwFTFieldOps, LemasSwFTFieldPerPop, LemasTotalReq, LemasTotReqPerPop, PolicReqPerOffic, PolicPerPop, RacialMatchCommPol, PctPolicWhite, PctPolicBlack, PctPolicHisp, PctPolicAsian, PctPolicMinor, OfficAssgnDrugUnits, NumKindsDrugsSeiz, PolicAveOTWorked, PolicCars, PolicOperBudg, LemasPctPolicOnPatr, LemasGangUnitDeploy, PolicBudgPerPop)) %>%
+  select(-c(state, county, community, communityname, population, LemasSwornFT, LemasSwFTPerPop, 
+            LemasSwFTFieldOps, LemasSwFTFieldPerPop, LemasTotalReq, LemasTotReqPerPop, PolicReqPerOffic, 
+            PolicPerPop, RacialMatchCommPol, PctPolicWhite, PctPolicBlack, PctPolicHisp, PctPolicAsian, 
+            PctPolicMinor, OfficAssgnDrugUnits, NumKindsDrugsSeiz, PolicAveOTWorked, PolicCars, PolicOperBudg, 
+            LemasPctPolicOnPatr, LemasGangUnitDeploy, PolicBudgPerPop)) %>%
   drop_na()
 view(goodershit)
 
 realgoodshit <- goodershit %>%
   cor(goodershit)
-view(realgoodshit)
 ```
 
 ####Correlation of variables with ViolentCrimesPerPop
@@ -59,7 +62,9 @@ This data set is far too large to make a full pairs plot, so start off looking a
 ggplot(data = goodershit, mapping = aes(x = PctIlleg,
 y = ViolentCrimesPerPop)) +
 geom_point(alpha = 0.2) +
-  labs(x = "percentage of kids born to never married", y = "total number of violent crimes per 100K popuation")
+  labs(x = "percentage of kids born to never married", 
+       y = "total number of violent crimes per 100K popuation")+
+  geom_smooth(method = "lm", se = FALSE, col = "orchid")
 ```
 Correlation Coefficent: 0.74352441
 
@@ -67,7 +72,9 @@ Correlation Coefficent: 0.74352441
 ggplot(data = goodershit, mapping = aes(x = racePctWhite,
 y = ViolentCrimesPerPop)) +
 geom_point(alpha = 0.2) +
-  labs(x = "percentage of population that is caucasian", y = "total number of violent crimes per 100K popuation")
+  labs(x = "percentage of population that is caucasian", 
+       y = "total number of violent crimes per 100K popuation")+
+  geom_smooth(method = "lm", se = FALSE, col = "orchid")
 ```
 Correlation Coefficent: -0.68885560
 
@@ -75,15 +82,117 @@ Correlation Coefficent: -0.68885560
 ggplot(data = goodershit, mapping = aes(x = pctWPubAsst,
 y = ViolentCrimesPerPop)) +
 geom_point(alpha = 0.2) +
-  labs(x = "percentage of households with public assistance income in 1989", y = "total number of violent crimes per 100K popuation")
+  labs(x = "percentage of households with public assistance income in 1989", 
+       y = "total number of violent crimes per 100K popuation")+
+  geom_smooth(method = "lm", se = FALSE, col = "orchid")
 ```
 Correlation Coefficent: 0.59227263
+
+```{r}
+ggplot(data = goodershit, mapping = aes(x = PctPersOwnOccup,
+y = ViolentCrimesPerPop)) +
+geom_point(alpha = 0.2) +
+  labs(x = "percent of people in owner occupied households", 
+       y = "total number of violent crimes per 100K popuation")+
+  geom_smooth(method = "lm", se = FALSE, col = "orchid")
+```
+Correlation Coefficent: -0.57620572
+
+```{r}
+ggplot(data = goodershit, mapping = aes(x = PctFam2Par,
+y = ViolentCrimesPerPop)) +
+geom_point(alpha = 0.2) +
+  labs(x = "percentage of families (with kids) that are headed by two parents", 
+       y = "total number of violent crimes per 100K popuation")+
+  geom_smooth(method = "lm", se = FALSE, col = "orchid")
+```
+Correlation Coefficent: -0.70528060
 
 ###3. Model building
 Start building a series of models of varying complexity. Things to consider include transformations, polynomials, and interaction terms. You can compare predictive power of candidate models using several tools including statistics that penalize for complexity ((R^2_{adj}) and RSE) as well as the F-test (discussed in Ch. 3 of the book). Also, if there is multicollinearity between your predictors, that’s a sign that some of them can be removed.
 
+```{r}
+m0<-lm(ViolentCrimesPerPop ~ PctFam2Par + racePctWhite + PctPersOwnOccup, data = goodershit)
+summary(m0)$r.squared 
+```
+```{r}
+mPctIlleg <- lm(ViolentCrimesPerPop ~ PctIlleg, data = goodershit)
+summary(mPctIlleg)$r.squared
+mracePctWhite <- lm(ViolentCrimesPerPop ~ racePctWhite, data = goodershit)
+summary(mracePctWhite)$r.squared
+mPctPersOwnOccup <- lm(ViolentCrimesPerPop ~ pctWPubAsst, data = goodershit)
+summary(mPctPersOwnOccup)$r.squared
+```
+
+```{r}
+ggplot(goodershit, aes(x = PctFam2Par)) +
+  geom_histogram(fill = "steelblue") +
+  theme_bw()
+logPctFam2Par <- log(goodershit$PctFam2Par)
+ggplot(goodershit, aes(x = logPctFam2Par)) +
+  geom_histogram(fill = "steelblue", bins = 25) +
+  theme_bw()
+```
+The log is less normal.
+
+```{r}
+ggplot(goodershit, aes(x = PctIlleg)) +
+  geom_histogram(fill = "steelblue") +
+  theme_bw()
+logPctIlleg <- log(goodershit$PctIlleg)
+ggplot(goodershit, aes(x = logPctIlleg)) +
+  geom_histogram(fill = "steelblue", bins = 25) +
+  theme_bw()
+```
+The log of PctIlleg has a far more normal distribution.
+
+```{r}
+ggplot(goodershit, aes(x = racePctWhite)) +
+  geom_histogram(fill = "steelblue") +
+  theme_bw()
+logracepctblack <- log(goodershit$racePctWhite)
+ggplot(goodershit, aes(x = logracepctblack)) +
+  geom_histogram(fill = "steelblue") +
+  theme_bw()
+```
+Not a normal distribution at all for either.
+
+```{r}
+ggplot(goodershit, aes(x = pctWPubAsst)) +
+  geom_histogram(fill = "steelblue") +
+  theme_bw()
+logpctWPubAsst <- log(goodershit$pctWPubAsst)
+ggplot(goodershit, aes(x = logpctWPubAsst)) +
+  geom_histogram(fill = "steelblue", bins = 25) +
+  theme_bw()
+```
+The log has a far more normal distribution.
+
+```{r}
+ggplot(goodershit, aes(x = PctPersOwnOccup)) +
+  geom_histogram(fill = "steelblue", bins = 20) +
+  theme_bw()
+logPctPersOwnOccup <- log(goodershit$PctPersOwnOccup)
+ggplot(goodershit, aes(x = logPctPersOwnOccup)) +
+  geom_histogram(fill = "steelblue", bins = 25) +
+  theme_bw()
+```
+The original variable has a much more normal distribution than the log.
+
 ###4. Model diagnostics
 If you’re relying on p-values to decide which variables to include in your model, you’ll want to verify that they’re accurate. Bring up residual plots for your models to assess the validity of your model (normal residuals with constant variance, linear trend).
+
+```{r}
+par(mfrow = c(1, 2))
+plot(m0, 1:2)
+plot(m0, c(3, 5))
+plot(mPctIlleg, 1:2)
+plot(mPctIlleg, c(3, 5))
+plot(mracePctWhite, 1:2)
+plot(mracePctWhite, c(3, 5))
+plot(mPctPersOwnOccup, 1:2)
+plot(mPctPersOwnOccup, c(3, 5))
+```
 
 * * *
 R Functions
@@ -96,9 +205,8 @@ group_K_fit <- function(training_data) {
 x <- sample(c(TRUE, FALSE), 800, replace = TRUE)
   train <-d[!x,]
   test <-d[x,]
-  m1<-lm(ViolentCrimesPerPop ~ PctIlleg + racePctWhite + PctPersOwnOccup, data = train)
+  m1<-lm(ViolentCrimesPerPop ~ PctFam2Par + racePctWhite + PctPersOwnOccup, data = train)
 }
-summary(m1)
 ```
 
 2. Computing MSE
@@ -107,12 +215,7 @@ Please write a function that takes as input the output from group_A_fit and a da
 ```{r}
 group_K_MSE <- function(model, data) {
 predict(m1, newdata = test)
-MSE <- mean(m1$residuals^2)
-MSE
+training_MSE <- mean(m1$residuals^2)
+training_MSE
 }
-
-    group_K_MSE(model = m1, data = test)
 ```
-
-When you turn in this lab, you should be running group_A_MSE on the training data to get training MSE. I’ll be 
-changing out the data set when I run this function to find your groups’ test MSE.
