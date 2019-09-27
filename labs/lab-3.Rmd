@@ -1,0 +1,118 @@
+---
+title: "Lab 3: Regression Competition"
+subtitle: "In the hot New Jersey night"
+author: "Alyssa Andrichik"
+partner: "Emmett Powers""
+life saver: "Simon Couch""
+output: 
+  pdf_document: default
+---
+
+* * *
+##Lab 3: Regression Competition
+###In the hot New Jersey night
+Your objective is to build a multiple regression model that predicts the amount of violent crime in a community as a function of other characteristics of those communities. You will construct your model using a training data set with information on over 100 variables recorded for 1000 communities. I’ve held back the data on 200 communities; this will server as the test data set for assessing the predictive accuracy of your model. Your model will be due by noon on Friday.
+
+The main components of this lab are two R functions, described below, but consider and record the following as you go through the model building process.
+
+```{r}
+d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
+library(MASS)
+library(tidyverse)
+library(broom)
+library(dplyr)
+```
+
+###1. Understanding the data provenance
+A codebook for the data can be found here. Read through that and jot down any predictors that you expect to have a strong association with violent crime - these will serve as a good jumping off point. You’ll notice there are some variables that have lots of missing data. I recommend that you don’t include these in your model.
+
+```{r}
+d[d=="?"]<-NA
+d[d==""]<-NA
+```
+```{r}
+goodershit <- d %>%
+  select(-c(state, county, community, communityname, population, LemasSwornFT, LemasSwFTPerPop, LemasSwFTFieldOps, LemasSwFTFieldPerPop, LemasTotalReq, LemasTotReqPerPop, PolicReqPerOffic, PolicPerPop, RacialMatchCommPol, PctPolicWhite, PctPolicBlack, PctPolicHisp, PctPolicAsian, PctPolicMinor, OfficAssgnDrugUnits, NumKindsDrugsSeiz, PolicAveOTWorked, PolicCars, PolicOperBudg, LemasPctPolicOnPatr, LemasGangUnitDeploy, PolicBudgPerPop)) %>%
+  drop_na()
+view(goodershit)
+
+realgoodshit <- goodershit %>%
+  cor(goodershit)
+view(realgoodshit)
+```
+
+####Correlation of variables with ViolentCrimesPerPop
+PctIlleg: percentage of kids born to never married -- 0.74352441
+racepctblack: percentage of population that is african american -- 0. 61396953
+PctKids2Par: percentage of kids in family housing with two parents -- -0.73929315
+PctFam2Par: percentage of families (with kids) that are headed by two parents -- -0.70528060
+racePctWhite: percentage of population that is caucasian -- -0.68885560
+PctYoungKids2Par: percent of kids 4 and under in two parent households -- -0.66897706
+PctTeen2Par: percent of kids age 12-17 in two parent households -- -0.65329249
+PctPersOwnOccup: percent of people in owner occupied households -- -0.57620572
+pctWPubAsst: percentage of households with public assistance income in 1989 -- 0.59227263
+
+###2. Exploratory data analysis
+This data set is far too large to make a full pairs plot, so start off looking at the pairwise relationships between the response and the predictors you expect will be useful. Do these relationships look strong/weak? Linear/non-linear? Does it seem like a transformation would be useful? To read in the data, you can use
+
+```{r}
+ggplot(data = goodershit, mapping = aes(x = PctIlleg,
+y = ViolentCrimesPerPop)) +
+geom_point(alpha = 0.2) +
+  labs(x = "percentage of kids born to never married", y = "total number of violent crimes per 100K popuation")
+```
+Correlation Coefficent: 0.74352441
+
+```{r}
+ggplot(data = goodershit, mapping = aes(x = racePctWhite,
+y = ViolentCrimesPerPop)) +
+geom_point(alpha = 0.2) +
+  labs(x = "percentage of population that is caucasian", y = "total number of violent crimes per 100K popuation")
+```
+Correlation Coefficent: -0.68885560
+
+```{r}
+ggplot(data = goodershit, mapping = aes(x = pctWPubAsst,
+y = ViolentCrimesPerPop)) +
+geom_point(alpha = 0.2) +
+  labs(x = "percentage of households with public assistance income in 1989", y = "total number of violent crimes per 100K popuation")
+```
+Correlation Coefficent: 0.59227263
+
+###3. Model building
+Start building a series of models of varying complexity. Things to consider include transformations, polynomials, and interaction terms. You can compare predictive power of candidate models using several tools including statistics that penalize for complexity ((R^2_{adj}) and RSE) as well as the F-test (discussed in Ch. 3 of the book). Also, if there is multicollinearity between your predictors, that’s a sign that some of them can be removed.
+
+###4. Model diagnostics
+If you’re relying on p-values to decide which variables to include in your model, you’ll want to verify that they’re accurate. Bring up residual plots for your models to assess the validity of your model (normal residuals with constant variance, linear trend).
+
+* * *
+R Functions
+1. Fitting the model
+Please write a function that takes the training data as input and then outputs an lm object. It should be of the form,
+
+```{r}
+group_K_fit <- function(training_data) { 
+  library(tidyverse)
+x <- sample(c(TRUE, FALSE), 800, replace = TRUE)
+  train <-d[!x,]
+  test <-d[x,]
+  m1<-lm(ViolentCrimesPerPop ~ PctIlleg + racePctWhite + PctPersOwnOccup, data = train)
+}
+summary(m1)
+```
+
+2. Computing MSE
+Please write a function that takes as input the output from group_A_fit and a data set, and returns the MSE. (hint: there is a predict() function that may be helpful.)
+
+```{r}
+group_K_MSE <- function(model, data) {
+predict(m1, newdata = test)
+MSE <- mean(m1$residuals^2)
+MSE
+}
+
+    group_K_MSE(model = m1, data = test)
+```
+
+When you turn in this lab, you should be running group_A_MSE on the training data to get training MSE. I’ll be 
+changing out the data set when I run this function to find your groups’ test MSE.
