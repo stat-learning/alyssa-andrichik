@@ -196,26 +196,51 @@ plot(mPctPersOwnOccup, c(3, 5))
 
 * * *
 R Functions
-1. Fitting the model
-Please write a function that takes the training data as input and then outputs an lm object. It should be of the form,
 
+1. The Process
+```{r}
+group_K_process <- function(model, data)
+x <- sample(c(TRUE, FALSE), 800, replace = TRUE)
+library(tidyverse)
+d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
+d_fit <- d
+training_data <- d[!x,]
+testing_data <- d[x,] 
+```
+
+2. Fitting the model
 ```{r}
 group_K_fit <- function(training_data) { 
   library(tidyverse)
-x <- sample(c(TRUE, FALSE), 800, replace = TRUE)
-  train <-d[!x,]
-  test <-d[x,]
-  m1<-lm(ViolentCrimesPerPop ~ PctFam2Par + racePctWhite + PctPersOwnOccup, data = train)
+  m1<-lm(ViolentCrimesPerPop ~ 
+           PctFam2Par + 
+           racePctWhite + 
+           PctPersOwnOccup, 
+         training_data)
 }
 ```
 
-2. Computing MSE
+3. Computing MSE
 Please write a function that takes as input the output from group_A_fit and a data set, and returns the MSE. (hint: there is a predict() function that may be helpful.)
-
 ```{r}
 group_K_MSE <- function(model, data) {
-predict(m1, newdata = test)
+predict(m1, newdata = testing_data)
 training_MSE <- mean(m1$residuals^2)
-training_MSE
+}
+```
+
+4. The Automated Fit
+```{r}
+group_K_automated_fit <- function(model, data) {
+  install.packages("leaps")
+library(leaps)
+d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
+newd <- d %>%
+  select(population:PctSameState85, ViolentCrimesPerPop)
+modReg <- regsubsets(ViolentCrimesPerPop ~ ., 
+                     data = newd, 
+                     nvmax = 25, 
+                     method = "forward")
+str(summary(modReg))
 }
 ```
