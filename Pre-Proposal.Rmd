@@ -1,0 +1,16 @@
+---
+title: "Project Pre-Proposal"
+author: "Alyssa Andrichik"
+date: "11/3/2019"
+output: pdf_document
+---
+In a perfect world, I would prefer to be grouped with Eva, Joe, and Emmett. But since it is only a group of three I would prefer to work with Joe and Eva since our schedules work really well.
+
+First suggestion:
+Can we built a model that accurately predicts whether a person is a republican or democrat based on their answers to various questions on the GSS database? Classification. Predictive. We will train our model on data gathered and documented on the GSS database.
+
+Second suggestion:
+Can we built a model that accurately predicts what Harry Potter house a Reedies identifies as based off of their awnsers to questions that relate to other sci-fi or dystopian novels that were popular in our youth (Percy Jackson, Twilight, Divergent, etc.)? Classification. Predictive. We will train our model on data gathered through a survey questionnaire.
+
+Third suggestion:
+Can we built a model that accurately predicts whether a person will participate in the armed forces based on their answers to various questions on the GSS database? Classification. Predictive. We will train our model on data gathered and documented on the GSS database.
