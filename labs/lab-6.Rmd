@@ -1,0 +1,184 @@
+---
+title: "Lab 6"
+author: "Alyssa Andrichik"
+date: "11/4/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+d <- read.csv("https://bit.ly/36kibHZ")
+library(tidyverse)
+library(ISLR)
+library(ggplot2)
+summary(d)
+```
+
+##1. Inventing a Variable
+1) Add a new column, MAPE to the data frame, which is the ratio of Price to Earnings_10MA_back. Bring up the summary statistics for the new column using the summary() command. Why are there exactly 120 NAs? For ease of computing for the rest of the lab, you may want to remove all rows with any missing data.
+```{r}
+new_d <- mutate(d, MAPE = Price/Earnings_10MA_back)
+summary(new_d)
+d1 <- na.omit(new_d)
+```
+There is 120 NAs because the Earnings_10MA_back is a ten-year moving average of earnings, looking backwards from the current date, and since those 120 observations are from the first ten years of the data set so there is no data 10 years prior to those observations.
+
+2) Build a linear model to predict returns using MAPE (and nothing else). What is the coefficient and it’s standard error? Is it significant?
+```{r}
+lm <- lm(Return_10_fwd ~ MAPE, data = d1)
+summary(lm)
+lm
+```
+The coefficient is -0.004589 and the standard error is 0.0001727. This is significant because the p-value is so small. 
+
+3) What is the MSE of this model under five-fold CV? I recommend you go about this by adding a column to your data frame indicating the randomly assigned fold to which every observation belongs. Then use a for-loop to fit and predict across each of the five folds, where you can use the appropriate data by subsetting based on the fold.
+```{r}
+calcMSE <- function(lm, d1){
+n <- nrow(d1)
+y <- d1$Return_10_fwd
+y_hat <- predict(lm, d1)
+residuals <- y_hat - y
+MSE_i <- sum(residuals^2)/n
+}
+```
+
+```{r}
+set.seed(1484)
+k <- 5
+blankMSE <- c(0,0,0,0,0)
+partition_index1 <- rep(1:k, each = nrow(d1)/k) %>% 
+  sample()
+
+for(i in 1:k){
+train1 <- d1[partition_index1!=i,]
+test1 <- d1[partition_index1==i,]
+model1 <- lm(Return_10_fwd ~ MAPE, data = train1)
+MSE <- calcMSE(model1, test1)
+blankMSE[i] = MSE
+}
+blankMSE
+mean(blankMSE)
+```
+The MSE of this model under five-fold CV is 0.001868338.
+
+##2. Inverting a variable
+1) Build a linear model to predict returns using 1/MAPE (and nothing else). What is the coefficient and its standard error? Is it significant?
+
+```{r}
+lm2 <- lm(Return_10_fwd ~ I(1/MAPE), data = d1)
+lm2
+summary(lm2)
+```
+The coefficient is 0.995904 and the standard error is 0.0001727. This is significant because the p-value is so small. 
+
+2) What is the CV MSE of this model? How does it compare to the previous one?
+```{r}
+calcMSE2 <- function(lm2, d1){
+n <- nrow(d1)
+y <- d1$Return_10_fwd
+y_hat2 <- predict(lm2, d1)
+residuals2 <- y_hat2 - y
+MSE_i2 <- sum(residuals2^2)/n
+}
+```
+
+```{r}
+set.seed(1484)
+k <- 5
+blankMSE2 <- c(0,0,0,0,0)
+partition_index2 <- rep(1:k, each = nrow(d1)/k) %>% 
+  sample()
+
+for(i in 1:k){
+train2 <- d1[partition_index2!=i,]
+test2 <- d1[partition_index2==i,]
+model2 <- lm(Return_10_fwd ~ I(1/MAPE), data = train2)
+MSE2 <- calcMSE2(model2, test2)
+blankMSE2[i] = MSE2
+}
+blankMSE2
+mean(blankMSE2)
+```
+
+The CV MSE of this model is 0.001838743 which is a smaller MSE than the previous model of 0.001868338.
+
+##3. A simple model
+###A simple-minded model says that the expected returns over the next ten years should be exactly equal to 1/MAPE.
+
+1) Find the training MSE for this model.
+```{r}
+# Set a seed
+set.seed(1484)
+# Train-test random splitting for linear model
+index <- sample(1:nrow(d1),round(0.5*nrow(d1)))
+train <- d1[index,]
+test <- d1[-index,]
+# Fitting linear model
+lm.fit <- lm(Return_10_fwd~ I(1/MAPE), data = d1)
+# Predicted data from lm
+pr.lm <- predict(lm.fit,test)
+# Train MSE
+MSE.lm1 <- sum(((pr.lm - train$Return_10_fwd)^2)/nrow(train))
+MSE.lm1
+```
+
+2) Explain why the training MSE is equivalent to the estimate of the test MSE that we would get through five-fold CV.
+
+##4. Is simple sufficient?
+###The model that we fit in no. 2 is very similar to the simple-minded model. Let’s compare the similarity in these models. We could go about this in two ways. We could simulate from the simple-minded model many times and fit a model of the same form as no. 2 to each one to see if our observed slope in no. 2 is probable under the simple-minded model. We could also bootstrap the data set many times, fitting model 2 each time, then see where the simple-minded model lays in that distribution. Since we already have practiced with simulation, let’s do the bootstrap method.
+
+1. Form the bootstrap distribution for the slope of 1/MAPE (the code from class may be helpful).
+```{r}
+betas <- rep(NA,1484)
+bootind <- sample(1:nrow(d1))
+d1_boot <- d1[bootind,]
+
+for (i in 1:1484) {
+  bootind <- sample(1:nrow(d1), size = nrow(d1), replace = TRUE)
+  d1_boot<- d1[bootind,]
+  betas[i] <- coef(lm(Return_10_fwd ~ I(1/MAPE), data=d1_boot))[2]
+}
+```
+2. Plot this distribution with the parameter of interest (the slope corresponding to the simple-minded model) indicated by a vertical line.
+
+```{r echo = FALSE, warning = FALSE, message = FALSE, fig.height = 3.2, fig.align = "center"}
+df <- data.frame(betas)
+ggplot(df, aes(betas)) +
+  geom_histogram(col = "white") +
+  geom_vline(xintercept = MSE.lm1, color = "yellow") +
+  theme_bw()
+```
+
+3. What is the approximate 95% bootstrap confidence interval for the slope? How does this interval compare to the one returned by running confint() on your model object from question 2? Please explain any difference you’ve found.
+```{r}
+library(boot)
+boot.ci(d1_boot, betas, conf = 0.95)
+confint(lm2, level=0.95)
+```
+
+##5. One big happy plot
+###For this problem, you need to only include one plot and one paragraph of writing. Also, in this problem, take “line” to mean “straight or curved line” as appropriate, and be sure to plot actual lines and not disconnected points.
+
+1. Make a scatterplot of the returns against MAPE.
+
+2. Add two lines showing the predictions from the models you fit in problems 1 and 2.
+
+3. Add a line showing the predictions from the simple-minded model from problem 3.
+```{r}
+plot <- ggplot(d1, aes(x = MAPE, y = Return_10_fwd)) +
+  geom_point(shape=1) 
+
+
+  geom_abline(intercept =  0.138348, slope = -0.004589, color= "red", size = 1.5) +
+  geom_abline(intercept = -0.007659, slope = 0.995904, color = "green", size = 1.5)
+lm
+lm2
+```
+
+##The big picture
+1. Cross-validation for model selection: using CV MSE, which model would you select to make predictions of returns? Looking at the plot in question 5, does this seem like a good model? What are its strengths and weaknesses for prediction?
+
+2. Bootstrapping for uncertainty estimation: based on your bootstrapping procedure for the slope of the linear model using 1/MAPE as a predictor, is the simple-minded model a plausible model given our data?
