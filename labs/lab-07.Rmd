@@ -1,0 +1,205 @@
+---
+title: "Lab 7"
+author: "Alyssa Andrichik"
+date: "11/13/2019"
+output: 
+  pdf_document
+---
+
+## Lab 7: When a guest arrives they will count how many sides it has on
+
+In class, we estimated by eye the first split in a classification tree for the following shapely data set. Now let's check to see if our graphical intuition agrees with that of the full classification tree algorithm.
+
+```{r, echo = FALSE, fig.height=4.5, fig.width = 4.8, fig.align='center'}
+set.seed(75)
+n <- 16
+x1 <- runif(n)
+x2 <- runif(n)
+group <- as.factor(sample(1:3, n, replace = TRUE))
+levels(group) <- c("circle", "triangle", "square")
+df <- data.frame(x1, x2, group)
+df[1, 2] <- .765 # tweaks to make a more interesting configuration
+df[9, 1] <- .741
+df <- df[-7, ]
+
+library(ggplot2)
+ggplot(df, aes(x = x1, y = x2, col = group, shape = group)) +
+  geom_point(size = 4) +
+  scale_x_continuous(expand = c(0, 0) , limits = c(0, 1)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1)) +
+  scale_color_discrete(guide = FALSE) +
+  scale_shape_discrete(guide = FALSE) +
+  theme_bw()
+```
+
+### 1. Growing the full classification tree
+
+Use the `tree` package in R to fit a full unpruned tree to this data set, making splits based on the *Gini index*. You can find the code to do this in the slides from week 8 or in the lab at the end of Chapter 8 in the book. Please plot the resulting tree.
+
+```{r}
+library(tree)
+library(ISLR)
+library(tidyverse)
+library(broom)
+library(dplyr)
+```
+```{r}
+t1 <- tree(group ~. - group, data = df, split = "gini")
+plot(t1)
+text(t1, pretty = 0)
+```
+
+####a. The two most common splits that we saw in class were a horizontal split around $X_2 \approx 0.50$ and a vertical split around $X_1 \approx 0.30$. Was either of these the first split decided upon by your classification tree?
+No, the first split is x2 < 0.359267
+
+####b. What is the benefit of the second split in the tree?
+There is no benefit, if x2 is larger than or less than 0.650272 it will classified as a square.
+
+####c. Which class would this model predict for the new observation with $X_1 = 0.21, X_2 = 0.56$?
+Square
+
+### 2. An alternate metric
+
+Now refit the tree based on the *deviance* as the splitting criterion (you set this as an argument to the `tree()` function). The deviance is defined for the classification setting as:
+
+$$ -2 \sum_m \sum_k n_{mk} \log \hat{p}_{mk}$$
+
+Plot the resulting tree. Why does this tree differ from the tree fit based on the Gini Index?
+```{r}
+t2 <- tree(group ~. - group, data = df, split = "deviance")
+plot(t2)
+text(t2, pretty = 0)
+```
+Deviance is not scaled to account for the size, the number of obversations, or to account for their magnitude. It only fouses on the x2 variable while the Gini Index focuses only on the x1 variable.
+
+* * *
+
+### Crime and Communities, revisited
+
+In Lab 3, you fit a regression model to a training data set that predicted the crime rate in a community as a function of properties of that community.
+
+#### 3. Growing a pruned regression tree
+Fit a regression tree to the *training* data using the default splitting criteria (here, the deviance is essentially the RSS). Next, perform cost-complexity pruning and generate a plot showing the relationship between tree size and deviance to demonstrate the size of the best tree. Finally, construct the tree diagram for this best tree.
+```{r}
+d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
+d[d=="?"]<-NA
+d[d==""]<-NA
+
+newd <- d %>%
+  select(-c(state, county, community, communityname, population, LemasSwornFT, LemasSwFTPerPop, 
+            LemasSwFTFieldOps, LemasSwFTFieldPerPop, LemasTotalReq, LemasTotReqPerPop,
+            PolicReqPerOffic, PolicPerPop, RacialMatchCommPol, PctPolicWhite, PctPolicBlack,
+            PctPolicHisp, PctPolicAsian, PctPolicMinor, OfficAssgnDrugUnits, NumKindsDrugsSeiz,
+            PolicAveOTWorked, PolicCars, PolicOperBudg, LemasPctPolicOnPatr, LemasGangUnitDeploy,
+            PolicBudgPerPop)) %>%
+  drop_na()
+```
+```{r}
+t3 <- tree(ViolentCrimesPerPop ~. - ViolentCrimesPerPop, data = newd)
+plot(t3)
+text(t3, pretty = 0)
+```
+```{r eval = TRUE}
+t3cv <- cv.tree(t3, FUN = prune.tree)
+t3cv
+```
+```{r echo = FALSE, fig.align = "center", fig.width = 8}
+# Size vs Error
+plot(t3cv$size, t3cv$dev, type = "b", xlab = "n leaves", ylab = "error", cex=.75)
+```
+```{r}
+# Prune the tree
+t3cv$size[which.min(t3cv$dev)]
+t3prune <- prune.tree(t3, best = 13)
+```
+```{r echo = FALSE, fig.align = "center", fig.height = 3.4}
+#Best tree
+plot(t3prune)
+text(t3prune, pretty = 0)
+```
+
+#### 4. Comparing predictive performance
+Use this tree to compute the MSE for the *test* data set. How does it compare to the test MSE for your regression model? You can load the test data with the following code:
+
+```{r}
+test_data <- read.csv("https://bit.ly/2PYS8Ap")
+yhat = predict(t3prune, newdata =  test_data)
+mean((yhat - test_data$ViolentCrimesPerPop)^2)
+```
+```{r}
+x <- sample(c(TRUE, FALSE), 800, replace = TRUE)
+training_data <- d[!x,]
+testing_data <- d[x,] 
+m1 <- lm(ViolentCrimesPerPop ~ 
+           PctFam2Par + 
+           racePctWhite + 
+           PctPersOwnOccup, 
+         training_data)
+predict(m1, newdata = testing_data)
+regMSE <- mean(m1$residuals^2)
+regMSE
+```
+The MSE for my tree model is 0.01609171 and the MSE for my linear regression model is 0.02320641. The predictive performance of the tree model is better than the regression model since the mean squared error is smaller. 
+
+#### 5. Growing a random forest
+We now apply methods to decrease the variance of our estimates. Fit a `randomForest()` model that performs only bagging and no actual random forests (recall that bagging is the special case of random forests with $m = p$). Next, fit a second random forest model that uses $m = p/3$. Compute their test MSEs. Is this an improvement over the vanilla pruned regression tree? Does it beat your regression model?
+
+```{r}
+library(randomForest)
+```
+```{r}
+boot_ind <- sample(1:nrow(newd), 
+                   replace = TRUE)
+crim_boot <- newd[boot_ind, ]
+
+m <- sqrt(ncol(crim_boot))
+names(crim_boot)
+rforest_ind <- sample(1:ncol(crim_boot),
+                      size = m, replace = FALSE)
+rforest_ind
+crim_rforest <- crim_boot[ , c(rforest_ind, 13)]
+```
+
+```{r message = FALSE, fig.height=5, fig.align="center"}
+library(tree)
+rftree <- tree(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, data = crim_rforest)
+plot(rftree)
+text(rftree, pretty = 0)
+```
+
+```{r}
+model1 <- randomForest(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, data = crim_rforest, importance = TRUE)
+model1
+plot(model1)
+test2 <- predict(model1, newdata = crim_rforest)
+MSE2<- mean((test2 - crim_rforest$ViolentCrimesPerPop)^2)
+MSE2
+```
+---
+```{r}
+m2 <- sqrt(ncol(crim_boot))/3
+names(crim_boot)
+rforest_ind2 <- sample(1:ncol(crim_boot),
+                      size = m2, replace = FALSE)
+rforest_ind2
+crim_rforest2 <- crim_boot[ , c(rforest_ind2, 13)]
+```
+
+```{r message = FALSE, fig.height=5, fig.align="center"}
+library(tree)
+rftree2 <- tree(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, data = crim_rforest2)
+plot(rftree2)
+text(rftree2, pretty = 0)
+```
+
+```{r}
+model2 <- randomForest(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, data = crim_rforest2, importance = TRUE)
+model2
+plot(model2)
+test3 <- predict(model2, newdata = crim_rforest2)
+MSE3<- mean((test2 - crim_rforest2$ViolentCrimesPerPop)^2)
+MSE3
+```
+#### 6. Variance importance
+One thing we lose by using these computational techniques to limit the variance is the clearly interpretable tree diagram. We can still salvage some interpretability by considering `importance()`. Please construct a Variable Importance Plot (`varImpPlot()`). Are these restults similar/different from your interpretation of your regression coefficients in Lab 3?
+
