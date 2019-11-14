@@ -42,6 +42,7 @@ library(ISLR)
 library(tidyverse)
 library(broom)
 library(dplyr)
+library(randomForest)
 ```
 ```{r}
 t1 <- tree(group ~. - group, data = df, split = "gini")
@@ -145,29 +146,27 @@ The MSE for my tree model is 0.01609171 and the MSE for my linear regression mod
 We now apply methods to decrease the variance of our estimates. Fit a `randomForest()` model that performs only bagging and no actual random forests (recall that bagging is the special case of random forests with $m = p$). Next, fit a second random forest model that uses $m = p/3$. Compute their test MSEs. Is this an improvement over the vanilla pruned regression tree? Does it beat your regression model?
 
 ```{r}
-library(randomForest)
-```
-```{r}
+#$m = p$
 boot_ind <- sample(1:nrow(newd), 
                    replace = TRUE)
 crim_boot <- newd[boot_ind, ]
 
-m <- sqrt(ncol(crim_boot))
+m <- ncol(crim_boot)
 names(crim_boot)
 rforest_ind <- sample(1:ncol(crim_boot),
                       size = m, replace = FALSE)
 rforest_ind
 crim_rforest <- crim_boot[ , c(rforest_ind, 13)]
 ```
-
 ```{r message = FALSE, fig.height=5, fig.align="center"}
+#First Random Split
 library(tree)
 rftree <- tree(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, data = crim_rforest)
 plot(rftree)
 text(rftree, pretty = 0)
 ```
-
 ```{r}
+#Subsequent splits and Test MSE
 model1 <- randomForest(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, data = crim_rforest, importance = TRUE)
 model1
 plot(model1)
@@ -177,22 +176,21 @@ MSE2
 ```
 ---
 ```{r}
-m2 <- sqrt(ncol(crim_boot))/3
-names(crim_boot)
+#$m = p/3$
+m2 <- (ncol(crim_boot))/3
 rforest_ind2 <- sample(1:ncol(crim_boot),
                       size = m2, replace = FALSE)
 rforest_ind2
 crim_rforest2 <- crim_boot[ , c(rforest_ind2, 13)]
 ```
-
 ```{r message = FALSE, fig.height=5, fig.align="center"}
-library(tree)
+#First Random Split
 rftree2 <- tree(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, data = crim_rforest2)
 plot(rftree2)
 text(rftree2, pretty = 0)
 ```
-
 ```{r}
+#Subsequent splits and Test MSE
 model2 <- randomForest(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, data = crim_rforest2, importance = TRUE)
 model2
 plot(model2)
@@ -200,6 +198,9 @@ test3 <- predict(model2, newdata = crim_rforest2)
 MSE3<- mean((test2 - crim_rforest2$ViolentCrimesPerPop)^2)
 MSE3
 ```
+The test MSE for the random forest with $m = p$ is 0.001485386. The test MSE for the random forest with $m = p/3$ is 0.001485386.
+
 #### 6. Variance importance
 One thing we lose by using these computational techniques to limit the variance is the clearly interpretable tree diagram. We can still salvage some interpretability by considering `importance()`. Please construct a Variable Importance Plot (`varImpPlot()`). Are these restults similar/different from your interpretation of your regression coefficients in Lab 3?
 
+```
