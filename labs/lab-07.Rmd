@@ -36,7 +36,7 @@ ggplot(df, aes(x = x1, y = x2, col = group, shape = group)) +
 
 Use the `tree` package in R to fit a full unpruned tree to this data set, making splits based on the *Gini index*. You can find the code to do this in the slides from week 8 or in the lab at the end of Chapter 8 in the book. Please plot the resulting tree.
 
-```{r}
+```{r echo = FALSE}
 library(tree)
 library(ISLR)
 library(tidyverse)
@@ -44,7 +44,7 @@ library(broom)
 library(dplyr)
 library(randomForest)
 ```
-```{r}
+```{r echo = FALSE}
 t1 <- tree(group ~. - group, data = df, split = "gini")
 plot(t1)
 text(t1, pretty = 0)
@@ -66,7 +66,7 @@ Now refit the tree based on the *deviance* as the splitting criterion (you set t
 $$ -2 \sum_m \sum_k n_{mk} \log \hat{p}_{mk}$$
 
 Plot the resulting tree. Why does this tree differ from the tree fit based on the Gini Index?
-```{r}
+```{r echo = FALSE}
 t2 <- tree(group ~. - group, data = df, split = "deviance")
 plot(t2)
 text(t2, pretty = 0)
@@ -95,12 +95,12 @@ newd <- d %>%
             PolicBudgPerPop)) %>%
   drop_na()
 ```
-```{r}
+```{r echo = FALSE}
 t3 <- tree(ViolentCrimesPerPop ~. - ViolentCrimesPerPop, data = newd)
 plot(t3)
 text(t3, pretty = 0)
 ```
-```{r eval = TRUE}
+```{r echo = FALSE, eval = TRUE}
 t3cv <- cv.tree(t3, FUN = prune.tree)
 t3cv
 ```
@@ -108,7 +108,7 @@ t3cv
 # Size vs Error
 plot(t3cv$size, t3cv$dev, type = "b", xlab = "n leaves", ylab = "error", cex=.75)
 ```
-```{r}
+```{r echo = FALSE}
 # Prune the tree
 t3cv$size[which.min(t3cv$dev)]
 t3prune <- prune.tree(t3, best = 13)
@@ -122,12 +122,12 @@ text(t3prune, pretty = 0)
 #### 4. Comparing predictive performance
 Use this tree to compute the MSE for the *test* data set. How does it compare to the test MSE for your regression model? You can load the test data with the following code:
 
-```{r}
+```{r echo = FALSE}
 test_data <- read.csv("https://bit.ly/2PYS8Ap")
 yhat = predict(t3prune, newdata =  test_data)
 mean((yhat - test_data$ViolentCrimesPerPop)^2)
 ```
-```{r}
+```{r echo = FALSE}
 x <- sample(c(TRUE, FALSE), 800, replace = TRUE)
 training_data <- d[!x,]
 testing_data <- d[x,] 
@@ -144,14 +144,13 @@ The MSE for my tree model is 0.01609171 and the MSE for my linear regression mod
 
 #### 5. Growing a random forest
 We now apply methods to decrease the variance of our estimates. Fit a `randomForest()` model that performs only bagging and no actual random forests (recall that bagging is the special case of random forests with $m = p$). Next, fit a second random forest model that uses $m = p/3$. Compute their test MSEs. Is this an improvement over the vanilla pruned regression tree? Does it beat your regression model?
-```{r}
+```{r echo = FALSE}
 #$m = p$
 boot_ind <- sample(1:nrow(newd), 
                    replace = TRUE)
 crim_boot <- newd[boot_ind, ]
 
 m <- ncol(crim_boot)
-names(crim_boot)
 rforest_ind <- sample(1:ncol(crim_boot),
                       size = m, replace = FALSE)
 rforest_ind
@@ -160,13 +159,15 @@ crim_rforest <- crim_boot[ , c(rforest_ind, 13)]
 ```{r message = FALSE, fig.height=5, fig.align="center"}
 #First Random Split
 library(tree)
-rftree <- tree(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, data = crim_rforest)
+rftree <- tree(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, 
+               data = crim_rforest)
 plot(rftree)
 text(rftree, pretty = 0)
 ```
-```{r}
+```{r echo = FALSE}
 #Subsequent splits and Test MSE
-model1 <- randomForest(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, data = crim_rforest, importance = TRUE)
+model1 <- randomForest(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, 
+                       data = crim_rforest, importance = TRUE)
 model1
 plot(model1)
 test2 <- predict(model1, newdata = crim_rforest)
@@ -174,13 +175,13 @@ MSE2<- mean((test2 - crim_rforest$ViolentCrimesPerPop)^2)
 MSE2
 ```
 ---
-```{r}
+```{r echo = FALSE}
 #$m = p/3$
 boot_ind <- sample(1:nrow(newd), 
                    replace = TRUE)
 crim_boot <- newd[boot_ind, ]
 
-m2 <- (ncol(crim_boot))/3
+m2 <- ncol(crim_boot/3)
 rforest_ind2 <- sample(1:ncol(crim_boot),
                       size = m2, replace = FALSE)
 rforest_ind2
@@ -188,13 +189,15 @@ crim_rforest2 <- crim_boot[ , c(rforest_ind2, 13)]
 ```
 ```{r message = FALSE, fig.height=5, fig.align="center"}
 #First Random Split
-rftree2 <- tree(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, data = crim_rforest2)
+rftree2 <- tree(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, 
+                data = crim_rforest2)
 plot(rftree2)
 text(rftree2, pretty = 0)
 ```
-```{r}
+```{r echo = FALSE}
 #Subsequent splits and Test MSE
-model2 <- randomForest(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, data = crim_rforest2, importance = TRUE)
+model2 <- randomForest(ViolentCrimesPerPop ~ .-ViolentCrimesPerPop, 
+                       data = crim_rforest2, importance = TRUE)
 model2
 plot(model2)
 test3 <- predict(model2, newdata = crim_rforest2)
@@ -207,4 +210,9 @@ Yes, the test MSE's from these random forests are much smaller than the singular
 #### 6. Variance importance
 One thing we lose by using these computational techniques to limit the variance is the clearly interpretable tree diagram. We can still salvage some interpretability by considering `importance()`. Please construct a Variable Importance Plot (`varImpPlot()`). Are these restults similar/different from your interpretation of your regression coefficients in Lab 3?
 
+```{r echo = FALSE}
+importance(model1)
+varImpPlot(model1)
 ```
+
+The variable importance plots show very similar results to what I interpreted were the more important variables. For my regression model, I chose the variables PctFam2Par, racePctWhite, and PctPersOwnOccup. PctPersOwnOccup was less important according to the random forests, which is where my interpretation of the most impactful predictors varied slightly. 
