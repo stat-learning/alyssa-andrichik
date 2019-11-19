@@ -1,0 +1,317 @@
+---
+title: "Lab 8"
+author: "Alyssa Andrichik"
+date: "11/17/2019"
+output: pdf_document
+---
+# Lab 8: Ransom notes keep falling
+
+One of the most useful applications to come out of classification models
+has been character (i.e. letter) recognition. In this lab, we build our
+own character recognition system using boosted trees.
+
+## The data
+
+Our data set consists of a catalog of the features extracted from 20,000
+images of letters. They can be loaded in with the following
+code.
+
+```{r echo = FALSE}
+library(tree)
+library(ISLR)
+library(tidyverse)
+library(broom)
+library(dplyr)
+library(randomForest)
+library(ggplot2)
+lettersdf <- read.csv("https://raw.githubusercontent.com/stat-learning/course-materials/master/data/letters.csv",
+                      header = FALSE)
+```
+
+Initially, the each image was made up of 45 x 45 pixels, where each was
+characterized as either “on” or “off” (black or white). In order to
+extract more meaningful predictors from the data, researchers \[^1\]
+went through and performed *feature extraction*, collapsing those 2025
+dimensions into 16, each of which is a summary statistic calculated on
+the image. They are as follows:
+
+1.  (The actual letter that the image corresponds to.)
+2.  The horizontal position, counting pixels from the left edge of the
+    image, of the center of the smallest rectangular box that can be
+    drawn with all “on” pixels inside the box.
+3.  The vertical position, counting pixels from the bottom, of the above
+    box.
+4.  The width, in pixels, of the box.
+5.  The height, in pixels, of the box.
+6.  The total number of “on” pixels in the character image.
+7.  The mean horizontal position of all “on” pixels relative to the
+    center of the box and divided by the width of the box. This feature
+    has a negative value if the image is “left- heavy” as would be the
+    case for the letter L.
+8.  The mean vertical position of all “on” pixels relative to the center
+    of the box and divided by the height of the box.
+9.  The mean squared value of the horizontal pixel distances as measured
+    in 6 above. This attribute will have a higher value for images whose
+    pixels are more widely separated in the horizontal direction as
+    would be the case for the letters W or M.
+10. The mean squared value of the vertical pixel distances as measured
+    in 7 above.
+11. The mean product of the horizontal and vertical distances for each
+    “on” pixel as measured in 6 and 7 above. This attribute has a
+    positive value for diagonal lines that run from bottom left to top
+    right and a negative value for diagonal lines from top left to
+    bottom right.
+12. The mean value of the squared horizontal distance times the vertical
+    distance for each “on” pixel. This measures the correlation of the
+    horizontal variance with the vertical position.
+13. The mean value of the squared vertical distance times the horizontal
+    distance for each “on” pixel. This measures the correlation of the
+    vertical variance with the horizontal position.
+14. The mean number of edges (an “on” pixel immediately to the right of
+    either an “off” pixel or the image boundary) encountered when making
+    systematic scans from left to right at all vertical positions within
+    the box. This measure distinguishes between letters like “W” or “M”
+    and letters like ‘T’ or “L.”
+15. The sum of the vertical positions of edges encountered as measured
+    in 13 above. This feature will give a higher value if there are more
+    edges at the top of the box, as in the letter “Y.”
+16. The mean number of edges (an “on” pixel immediately above either an
+    “off” pixel or the image boundary) encountered when making
+    systematic scans of the image from bottom to top over all horizontal
+    positions within the box.
+17. The sum of horizontal positions of edges encountered as measured in
+    15 above.
+
+In addition, each row/image was labeled with the letter that it
+corresponds to.
+
+You will want to build your model on a training data set and evaluate
+its performance on a separate test data set. Please use the following
+indices to subset out the training data set, leaving the remaining as
+test.
+
+```{r}
+#Training and Testing Data
+set.seed(1)
+train <- sample(1:nrow(lettersdf), nrow(lettersdf) * .75)
+traindata <- lettersdf[train, ]
+testdata <- lettersdf[-train, ]
+```
+
+## Building a boosted tree
+
+Construct a boosted tree to predict the class of the training images (the
+letters) based on its 16 features. This can be done with the `gbm()`
+function in the library of the same name. Look to the end of chapter 8
+for an example of the implementation. Note that we’ll be performing a
+boosted *classification* tree. It’s very similar to the boosted
+regression tree except the method of calculating a residual is adapted
+to the classification setting. Please use as your model parameters
+\(B = 50\), \(\lambda = 0.1\), and \(d = 1\). Note that this is
+computationally intensive, so it may take a minute to run. Which
+variable is found to be the most important?
+
+```{r}
+#Boosted Model
+library(gbm)
+boost.letters <- gbm(formula = V1 ~., data = traindata,
+                     distribution = "multinomial", n.trees = 50, 
+                     shrinkage = 0.1, interaction.depth = 1)
+summary(boost.letters)
+```
+
+V13, or the mean value of the squared vertical distance times the horizontal distance for each “on” pixel (this measures the correlation of the vertical variance with the horizontal position), is the most important variable.
+
+## Assessing predictions
+
+Now use this boosted model to predict the classes of the images in the
+test data set. Use the same number of trees and be sure to add the
+argument `type = "response"`. The output of this will be a 5000 X 26 X 1
+array: for each image you’ll have a predicted probability that it is
+from each of the 26 classes. To extract the vector of length 5000 of
+each final predicted class, you can use the following function.
+```{r}
+#Prediciton
+yhat.boost <- predict(boost.letters, newdata = testdata, n.trees = 50, type = "response", shrinkage = 0.1, interaction.depth = 1)
+predicted <- LETTERS[apply(yhat.boost, 1, which.max)]
+```
+
+###1.  Build a cross-tabulation of the predicted and actual letters (a 26 X 26 confusion matrix).
+```{r}
+#Confusion Matrix
+tab <- as.matrix(table(predicted, testdata$V1))
+tab
+```
+
+###2.  What is your misclassification rate?
+```{r}
+#Number of instances
+n <- sum(tab)
+n
+#Number of classes
+nc <- nrow(tab)
+nc
+#Number of correctly classified instances per class
+diag <- diag(tab)
+diag
+#Number of instances per class
+rowsums <- apply(tab, 1, sum)
+rowsums
+#Number of predictions per class
+colsums <- apply(tab, 2, sum)
+colsums
+#Distribution of instances over the actual classes 
+p <- rowsums / n
+p
+#Distribution of instances over the predicted classes
+q <- colsums / n
+q
+```
+```{r}
+#Misclassification Rate
+Misclass <- 1-sum(diag/n)
+Misclass
+```
+The misclassification rate is 0.3192. 
+
+###3.  What letter was most difficult to predict?
+```{r}
+#Precision is defined as the fraction of correct predictions for a certain class
+precision <- diag / colsums
+precision
+```
+Looking at the precision of the classification of every letter, the letter E was the most difficult letter to predict since the prediction was only correct 34.95 percent of the time.
+
+###4.  Are there any letter pairs that are particularly difficult to distinguish?
+D & B seems to be pretty difficult for the model to distinguish from one another. B was misclassified as D 20 times and D was misclassified as B 26 times. Q & G also seems to be difficult for the model to distinguish since G was misclassified as Q 19 times and Q misclassified as G 14 times. 
+
+## Slow the learning
+
+Build a second boosted tree model that uses even *slower* learners, that
+is, decrease \(\lambda\) and increase \(B\) somewhat to compensate (the
+slower the learner, the more of them we need). Pick the parameters of
+your choosing for this, but be wary of trying to fit a model with too
+high a \(B\). You don’t want to wait an hour for your model to fit.
+
+```{r}
+#Model
+boost2.letters <- gbm(formula = V1 ~., data = traindata,
+                     distribution = "multinomial", n.trees = 1000, 
+                     shrinkage = 0.01, interaction.depth = 1)
+summary(boost2.letters)
+```
+```{r}
+#Prediciton
+yhat2.boost <- predict(boost2.letters, newdata = testdata, n.trees = 1000, type = "response", shrinkage = 0.01, interaction.depth = 1)
+predicted2 <- LETTERS[apply(yhat2.boost, 1, which.max)]
+```
+```{r}
+#Confusion Matrix
+tab2 <- as.matrix(table(predicted2, testdata$V1))
+tab2
+```
+```{r}
+#Number of instances
+n2 <- sum(tab2)
+n2
+#Number of classes
+nc2 <- nrow(tab2)
+nc2
+#Number of correctly classified instances per class
+diag2 <- diag(tab2)
+diag2
+#Number of instances per class
+rowsums2 <- apply(tab2, 1, sum)
+rowsums2
+#Number of predictions per class
+colsums2 <- apply(tab2, 2, sum)
+colsums2
+#Distribution of instances over the actual classes 
+p2 <- rowsums2 / n2
+p2
+#Distribution of instances over the predicted classes
+q2 <- colsums2 / n2
+q2
+```
+```{r}
+#Misclassification Rate
+Misclass2 <- 1-sum(diag2/n2)
+Misclass2
+```
+###1.  How does the misclassification rate compare to the rate from your original model?
+The Misclassification rate decreased from 0.3192 to 0.2618! Less of the letters were misclassified in the new model.
+
+###2.  Are there any letter pairs that became particularly easier/more difficult to distinguish?
+The new model distinguished the letters B & D more correctly. Only 13 cases of B being misclassified as D and 17 cases of D being misclassified as B.
+However, F was misclassified as P 15 times and P was misclassified as F 18 times in the new model which is up from the original where F was only misclassified as P 14 times and P was only misclassified as F 16 times. So, distinguishing P from F became harder in the new model. G was misclassified at Q 25 times and Q misclassified as G 6 times, which is quite different from my original model where G was only misclassified as Q 19 times and Q misclassified as G 14 times.
+
+-----
+
+## Communities and Crime
+
+Return to the Communities and Crime data set.
+
+### One last boost
+
+Construct a model based on a boosted tree with parameters of your
+choosing. How does the test MSE compare to your existing models (Bagged
+Trees, Random Forests, etc.)?
+
+```{r}
+d <- read.csv("http://andrewpbray.github.io/data/crime-train.csv")
+d[d=="?"]<-NA
+d[d==""]<-NA
+
+newd <- d %>%
+  select(-c(state, county, community, communityname, population, LemasSwornFT, LemasSwFTPerPop, 
+            LemasSwFTFieldOps, LemasSwFTFieldPerPop, LemasTotalReq, LemasTotReqPerPop,
+            PolicReqPerOffic, PolicPerPop, RacialMatchCommPol, PctPolicWhite, PctPolicBlack,
+            PctPolicHisp, PctPolicAsian, PctPolicMinor, OfficAssgnDrugUnits, NumKindsDrugsSeiz,
+            PolicAveOTWorked, PolicCars, PolicOperBudg, LemasPctPolicOnPatr, LemasGangUnitDeploy,
+            PolicBudgPerPop)) %>%
+  drop_na()
+```
+```{r}
+#Training and Testing Data
+set.seed(1)
+traincrime <- sample(1:nrow(newd), nrow(newd) * .75)
+critraindata <- newd[traincrime, ]
+critestdata <- newd[-traincrime, ]
+```
+
+```{r}
+#Boosted Model
+boost.crime <- gbm(formula = ViolentCrimesPerPop ~., data = critraindata,
+                     distribution = "gaussian", n.trees = 100000, 
+                     shrinkage = 0.01, interaction.depth = 3)
+summary(boost.crime)
+```
+```{r}
+#Prediciton
+yhat3.boost <- predict(boost.crime, newdata = critestdata, n.trees = 100000, shrinkage = 0.01, interaction.depth = 3)
+```
+```{r}
+crime.test <- newd[-traincrime, "ViolentCrimesPerPop"]
+testMSE <- mean((yhat3.boost-crime.test)^2)
+testMSE
+```
+The test MSE from the boosted model is 0.02141982, the test MSE for my tree model is 0.01609171, the test MSE for my linear regression model is 0.02320641, and the test MSE for the random forest with $m = p$ is 0.001511666. So, my boosted model is slightly more accurate than the lineaar regression model, but not the random forest model or the normal tree model.
+-----
+
+# Chapter 8 exercises
+
+###5. Suppose we produce ten bootstrapped samples from a data set containing red and green classes. We then apply a classification tree to each bootstrapped sample and, for a specific value of $X$, produce 10 estimates of $P(\text{Class is Red}|X)$ :\[0.1,0.15,0.2,0.2,,0.55,0.6,0.6,0.65,0.7,0.75.\] There are two common ways to combine these results together into a single class prediction. One is the majority vote approach discussed in this chapter. The second approach is to classify based on the average probability. In this example, what is the final classification under each of these two approaches?
+
+The majority vote approach, looking for the most commonly occurring class among the 10 predictions, would classify $X$ as Red since there are there are more estimates that are >0.5 (0.55, 0.6, 0.65, 0.7, 0.75) than there are estimates that are <0.5 (0.1, 0.15, 0.2, 0.2). 
+Using the average probability approach, $X$ would be classified as Green since the average of the 10 probabilities is 0.45, which is less than 0.5.
+
+###6. Provide a detailed explanation of the algorithm that is used to fit a regression tree.
+
+To fit a regression tree, we must first do recursive binary splitting on the full data set to minimize the RSS. This top-down, greedy strategy is applied seperately to each split part until stopping condition when every leaf has a small number of observations ($n_j$ is greater than or equal to 5).
+
+Second, becauses the full $T_o$ might be too complex, we must prune the tree to identify the subtree that has the lowest estimated test MSE. This is cost complexity pruning, where the larger tree (from the originial data set) is pruned to find the sequence of best subtrees for many values of $\alpha$. For $\alpha$ > 0, there is a subtree (T) that gets minimized 
+$$\sum_{m=i}^{|T|}\sum_{i:x_i\in R_m}(y_i - \hat y_{R_m})^2 + \alpha |T|.$$
+Here $|T|$ is the number of terminal nodes on the tree. When $\alpha=0$ we have the original tree, and as $\alpha$ increases we get a more pruned version of the tree.
+
+Third, use K-fold CV to choose $\alpha$. 
+For each fold, repeat steps 1 and 2, and then compute the test MSE as a function of $\alpha$ on all subtrees. Chose an $\alpha$ that minimizes the average error after averaging the test MSEs of each $\alpha$.
