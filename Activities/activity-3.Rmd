@@ -1,7 +1,0 @@
----
-title: "Activity"
-author: "Alyssa Andrichik"
-date: "10/30/2019"
-output: pdf_document
----
-I worked with Eva. 
