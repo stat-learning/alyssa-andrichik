@@ -1,0 +1,34 @@
+---
+title: "Activity 5"
+author: "Alyssa Andrichik"
+date: "12/2/2019"
+output: pdf_document
+---
+```{r}
+poverty <- read.delim("https://bitly.com/381pd5e")
+head(poverty)
+library(tidyverse)
+```
+
+```{r}
+pov1 <- poverty[,-1]
+k <- kmeans(poverty[,-1], 2, nstart = 25)
+```
+
+
+```{r}
+set.seed(40)
+km1 <- kmeans(poverty[ ,-1], 4, nstart = 20)
+pcal1 <- prcomp(poverty[ ,-1])
+d <-data.frame(PC1 = pcal1$x[, 1],
+               PC2 = pcal1$x[, 2],
+               cluster = as.factor(km1$cluster),
+               state = poverty$state)
+
+```
+
+```{r}
+pcl <- prcomp(pov1, scale = TRUE)
+povdf <- as.data.frame(pov1$k)
+
+plot(k, col = pcl$cluster)
