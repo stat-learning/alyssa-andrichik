@@ -1,2 +1,2 @@
 # Alyssa Andrichik
-I am a junior political science major at Reed College and these are my assignments from my Statisical Learning class from fall 2019. 
+I am a senior political science major testing the waters of data science.
