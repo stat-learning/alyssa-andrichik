@@ -1,2 +1,2 @@
 # Alyssa Andrichik
-I am a senior political science major testing the waters of data science.
+These are the labs and activities I did when I took Statistical Learning fall 2019.
